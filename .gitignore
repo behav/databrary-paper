@@ -3,3 +3,5 @@
 .RData
 .Ruserdata
 face-off-paper.Rproj
+.DS_Store
+.databrary.RData

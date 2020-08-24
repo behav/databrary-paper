@@ -1,0 +1,91 @@
+---
+title: "Notes for Databrary repo"
+author: "Rick Gilmore"
+date: "`r Sys.time()`"
+output: html_document
+params:
+  download_video: false
+---
+
+
+# Purpose
+
+This document describes information required to curate a Databrary volume for the "Face-off" paper project.
+
+# Set-up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+source("R/write_video_clip_html.R")
+
+# Clean-up mov/ directory
+file.remove(list.files("mov", "\\.mp4$", full.names = TRUE))
+```
+
+## Logging in to Databary
+
+```{r, eval=FALSE}
+databraryapi::login_db()
+```
+
+# Background
+
+A video from the [Play & Learning Across a Year (PLAY) project](https://play-project.org) was selected from among the pilot sessions.
+
+[Participant 19](https://nyu.databrary.org/volume/444/slot/18825/-) from volume 444 was selected.
+
+The 1 hour free play video (https://nyu.databrary.org/slot/18825/78777000,82445800/asset/85849/download?inline=true) was chosen for analysis.
+
+A 3 min subset of this video beginning at 23:00 + ~ 4 frames was chosen for detailed coding and analysis.
+
+```{r}
+slot_id <- 18825
+asset_id <- 85849
+vol_id <- 444
+frames_fr_23min <- 4
+```
+
+## Calculating the offset in milliseconds
+
+```{r}
+fps <- 29.97
+secs_per_min <- 60
+ms_per_sec = 1000
+vid_start_ms <- 78777000
+seg_start_offset_ms <- round((23*secs_per_min + frames_fr_23min/fps)*ms_per_sec)
+seg_start_ms <- vid_start_ms + seg_start_offset_ms
+seg_end_ms <- seg_start_ms + 3*secs_per_min*ms_per_sec
+segment_id = paste0(seg_start_ms, ',', seg_end_ms)
+```
+
+If these calculations are correct, this should create the URI and download the relevant segment.
+
+```{r}
+(video_uri <- paste0("https://nyu.databrary.org/slot/", slot_id, "/", segment_id, "/asset/", asset_id, "/download?inline=true"))
+```
+
+If the `download_video` parameter is true this will download the video and display it. FIX: Wait until download is finished:
+
+```{r, results='asis'}
+if (params$download_video) {
+  databraryapi::download_video(session_id = 18825, asset_id = 85849, 
+                               segment_id = paste0(seg_start_ms, ',', seg_end_ms), out_dir = "mov")
+  vids <- list.files("mov", pattern = "\\.mp4$", full.names = TRUE) 
+  write_video_clip_html(vids[1])
+}
+```
+
+This code should display the segment from Databrary inline.
+
+```{r, results = 'asis'}
+write_video_clip_html(video_uri)
+```
+
+# Clean-up
+
+```{r}
+databraryapi::logout_db()
+```
+
